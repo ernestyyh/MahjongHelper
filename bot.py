@@ -1,19 +1,44 @@
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from mahjongHandler.mahjonghand import MahjongHand
+from mahjongHandler.mahjonghandanalyser import MahjongHandAnalyser
 
 def start(update, context):
     update.message.reply_text(
-        "start message"
+        "Send a photo of your tiles and I will tell you how close you are to a winning hand.\n"
     )
 
 def help_command(update, context):
     update.message.reply_text(
-        "help message"
+        "Please send the photos of tiles."
     )
 
+def load_model():
+    global model
+    # model = load the model here
+
 def detect_tiles(update, context):
+    user = update.message.from_user
+    photo_file = update.message.photo[-1].get_file()
+    photo_file.download('user_photo.jpg')
+
+    tiles = model.predict('user_photo.jpg')[0]
+    hand = MahjongHand(tiles)
+
+    analyser = MahjongHandAnalyser()
+    results = analyser.analyser(hand)
+    tiles_to_keep = results[0]
+    tiles_to_discard = results[1]
+    missing_tiles = results[2]
+
+    tiles_to_keep_str = "These are the tiles to keep " + " ".join(tiles_to_keep)
+    tiles_to_discard_str = "These are the tiles to discard " + " ".join(tiles_to_discard)
+    missing_tiles_str = "These are the missing tiles " + " ".join((missing_tiles))
+
     update.message.reply_text(
-        "detect tiles message"
+        tiles_to_keep_str + "\n" +
+        tiles_to_discard_str + "\n" +
+        missing_tiles_str
     )
 
 def main():
